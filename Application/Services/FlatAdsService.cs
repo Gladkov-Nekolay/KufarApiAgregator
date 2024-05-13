@@ -1,4 +1,5 @@
 ﻿using Core.DTOs;
+using Core.Entities;
 using Core.Interfaces;
 using MathNet.Numerics.Statistics;
 
@@ -14,12 +15,12 @@ public class FlatAdsService : IFlatAdsService
     }
     public async Task<double> FloorToPricePerSquareMeterCorrelationAsync(double priceThreshold, CancellationToken cancellationToken)
     {
-        var result = await _kufarApiAccessor.GetFlatAdsAsync(cancellationToken);
+        var apiResponse = await _kufarApiAccessor.GetFlatAdsAsync(cancellationToken);
 
-        var thresholdResult = result.Where(x => x.Price > priceThreshold).ToArray();
+        var thresholdResult = apiResponse.Where(x => x.Price > priceThreshold).ToArray();
 
         var floors = thresholdResult.Select(x => (double)x.Floor).ToArray();
-        var pricesPerSquareMeter = result.Select(x => x.PricePerSquareMeter).ToArray();
+        var pricesPerSquareMeter = thresholdResult.Select(x => x.PricePerSquareMeter).ToArray();
 
         double correlation = Correlation.Pearson(floors, pricesPerSquareMeter);
         return correlation;
@@ -27,12 +28,12 @@ public class FlatAdsService : IFlatAdsService
 
     public async Task<double> RoomsToPricePerSquareMeterCorrelationAsync(double priceThreshold, CancellationToken cancellationToken)
     {
-        var result = await _kufarApiAccessor.GetFlatAdsAsync(cancellationToken);
+        var apiResponse = await _kufarApiAccessor.GetFlatAdsAsync(cancellationToken);
 
-        var thresholdResult = result.Where(x => x.Price > priceThreshold).ToArray();
+        var thresholdResult = apiResponse.Where(x => x.Price > priceThreshold).ToArray();
 
         var rooms = thresholdResult.Select(x => (double)x.Rooms).ToArray();
-        var pricesPerSquareMeter = result.Select(x => x.PricePerSquareMeter).ToArray();
+        var pricesPerSquareMeter = thresholdResult.Select(x => x.PricePerSquareMeter).ToArray();
 
         double correlation = Correlation.Pearson(rooms, pricesPerSquareMeter);
         return correlation;
@@ -40,9 +41,9 @@ public class FlatAdsService : IFlatAdsService
 
     public async Task<double> MetroStationToPricePerSquareMeterCorrelationAsync(double priceThreshold, CancellationToken cancellationToken)
     {
-        var result = await _kufarApiAccessor.GetFlatAdsAsync(cancellationToken);
+        var apiResponse = await _kufarApiAccessor.GetFlatAdsAsync(cancellationToken);
 
-        var thresholdResult = result.Where(x => x.Price > priceThreshold).ToArray();
+        var thresholdResult = apiResponse.Where(x => x.Price > priceThreshold).ToArray();
 
         var metroThresholdResult = thresholdResult.Where(x => x.MetroStation != null).ToArray();
 
@@ -77,5 +78,15 @@ public class FlatAdsService : IFlatAdsService
         });
 
         return correlationCollectionResponseDto;
+    }
+
+    public async Task<FlatRentAds[]> GetFlatRentAdsAsync(string areaName, CancellationToken cancellationToken)
+    {
+        var apiResponse = await _kufarApiAccessor.GetRentFlatAdsAsync(cancellationToken);
+
+        var result = apiResponse.Where(x => x.IsOnlineAvaluable && x.AreaName.Equals(areaName)).ToArray();
+
+        result = result.OrderBy(x => x.Price).ToArray();
+        return result;
     }
 }

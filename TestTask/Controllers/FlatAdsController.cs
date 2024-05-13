@@ -16,10 +16,15 @@ namespace TestTask.Controllers
             _flatAdsService = flatAdsService;
         }
 
-        [HttpGet("{priceThreshold}")]
+        [HttpGet("correlation/{priceThreshold}")]
         public async Task<IActionResult> GetCorrelationAsync(double priceThreshold)
         {
             return Ok(await _flatAdsService.GetCorrelationsAsync(priceThreshold, _cancellationToken));
+        }
+        [HttpGet("area/{areaName}")]
+        public async Task<IActionResult> GetFlatsRentInAreaAsync(string areaName)
+        {
+            return Ok(await _flatAdsService.GetFlatRentAdsAsync(areaName, _cancellationToken));
         }
     }
 }

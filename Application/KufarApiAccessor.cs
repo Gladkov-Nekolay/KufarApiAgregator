@@ -36,7 +36,7 @@ namespace Application
 
             result = new List<FlatAds>();
 
-            var kufarApiResponse = await GetFlatAdsKufarApiDTOAsync(cancellationToken);
+            var kufarApiResponse = await GetFlatAdsKufarApiDTOAsync(_kufarOptions.Value.KufarURL, cancellationToken);
 
             foreach (var flatAdsKufarApiDTO in kufarApiResponse)
             {
@@ -97,11 +97,11 @@ namespace Application
             return result;
         }
 
-        public async Task<FlatAdsKufarApiDTO[]> GetFlatAdsKufarApiDTOAsync(CancellationToken cancellationToken)
+        public async Task<FlatAdsKufarApiDTO[]> GetFlatAdsKufarApiDTOAsync(string ApiURL,CancellationToken cancellationToken)
         {
             var httpClient = _httpClientFactory.CreateClient();
 
-            using (var response = await httpClient.GetAsync(_kufarOptions.Value.KufarURL,
+            using (var response = await httpClient.GetAsync(ApiURL,
                        HttpCompletionOption.ResponseHeadersRead, 
                        cancellationToken))
             {
@@ -113,5 +113,58 @@ namespace Application
                 return apiResponse.Advertisements;
             }
         }
+
+        public async Task<List<FlatRentAds>> GetRentFlatAdsAsync(CancellationToken cancellationToken)
+        {
+            if (_cache.TryGetValue("FlatRentAdsList", out List<FlatRentAds>? result))
+            {
+                return result ?? new List<FlatRentAds>();
+            }
+
+            result = new List<FlatRentAds>();
+
+            var kufarRentApiResponse = await GetFlatAdsKufarApiDTOAsync(_kufarOptions.Value.KufarRentURL, cancellationToken);
+
+            foreach (var flatAdsKufarApiDTO in kufarRentApiResponse)
+            {
+                var flatRentAd = new FlatRentAds();
+
+                flatRentAd.Url = flatAdsKufarApiDTO.AdvertisementUrl.ToString();
+                flatRentAd.Price = int.Parse(flatAdsKufarApiDTO.Price.ToString());
+
+                foreach (var AdPrameter in flatAdsKufarApiDTO.AdPrameters)
+                {
+                    switch (AdPrameter.ParameterName)
+                    {
+                        case "area":
+                        {
+                            flatRentAd.AreaName = AdPrameter.ParameterLocalValue.ToString();
+                            flatRentAd.AreaId = int.Parse(AdPrameter.Value.ToString());
+                            break;
+                        }
+                        case "re_payment_online":
+                        {
+                            flatRentAd.IsOnlineAvaluable = bool.Parse(AdPrameter.Value.ToString());
+                            break;
+                        }
+                        default:
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                result.Add(flatRentAd);
+            }
+
+            _cache.Set("FlatRentAdsList", result,
+                new MemoryCacheEntryOptions().SetAbsoluteExpiration(
+                    TimeSpan.FromMinutes(
+                    _cacheConfiguration.Value.CacheLifeTimeMinutes)));
+
+            return result;
+        }
+
+
     }
 }

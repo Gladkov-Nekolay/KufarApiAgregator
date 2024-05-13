@@ -14,12 +14,16 @@ public class FlatAdsKufarApiDTO
     public AdPrameters[] AdPrameters { get; set; }
     [JsonProperty("price_usd")]
     public object Price { get; set; }
+    [JsonProperty("ad_link")]
+    public object AdvertisementUrl { get; set; }
 }
 
 public class AdPrameters
 {
     [JsonProperty("p")]
     public string ParameterName { get; set; }
+    [JsonProperty("vl")]
+    public object ParameterLocalValue { get; set; }
 
     [JsonProperty("v")]
     public object Value { get; set; }
